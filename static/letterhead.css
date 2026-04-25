@@ -1,0 +1,629 @@
+/* Evye LLP — Master Letterhead Stylesheet
+   Brand fonts: Telegraf (titles/headings only), Helvetica Neue (body/sidebar/everything else)
+   Layout: A4 portrait with right sidebar for company info
+   Sidebar repeats on every page via position: fixed */
+
+/* ── Font Faces ─────────────────────────────────────────── */
+
+@font-face {
+    font-family: 'Telegraf';
+    src: url('../fonts/Telegraf-UltraLight.woff2') format('woff2'),
+         url('../fonts/Telegraf-UltraLight.otf') format('opentype');
+    font-weight: 200;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Telegraf';
+    src: url('../fonts/Telegraf-Regular.woff2') format('woff2'),
+         url('../fonts/Telegraf-Regular.otf') format('opentype');
+    font-weight: 400;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Telegraf';
+    src: url('../fonts/Telegraf-Bold.woff2') format('woff2'),
+         url('../fonts/Telegraf-Bold.otf') format('opentype');
+    font-weight: 700;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Telegraf';
+    src: url('../fonts/Telegraf-UltraBold.woff2') format('woff2'),
+         url('../fonts/Telegraf-UltraBold.otf') format('opentype');
+    font-weight: 900;
+    font-style: normal;
+}
+
+/* ── Page Setup (A4) ────────────────────────────────────── */
+
+@page {
+    size: A4 portrait;
+    margin: 15mm 15mm 22mm 20mm;
+
+    @bottom-left {
+        content: "Page " counter(page) " of " counter(pages);
+        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        font-size: 7pt;
+        color: #000;
+    }
+
+    @bottom-right {
+        content: "Private & Confidential\A \00A9  Evye LLP\A All Rights Reserved";
+        white-space: pre-wrap;
+        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        font-size: 6.5pt;
+        color: #999;
+        text-align: right;
+    }
+}
+
+/* ── Base ───────────────────────────────────────────────── */
+
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+html {
+    font-size: 9.5pt;
+}
+
+body {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-weight: 400;
+    line-height: 1.35;
+    color: #000;
+    margin: 0;
+    padding: 0;
+}
+
+/* ── Fixed Sidebar (repeats on every page) ──────────────── */
+
+.sidebar-fixed {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 42mm;
+    text-align: right;
+    z-index: 100;
+}
+
+.logo {
+    width: 70px;
+    height: auto;
+    margin-bottom: 4mm;
+    display: block;
+    margin-left: auto;
+}
+
+.sidebar-info {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-size: 7pt;
+    line-height: 1.4;
+    color: #000;
+    text-align: right;
+}
+
+.sidebar-info .company-name {
+    font-weight: 700;
+    margin: 0;
+}
+
+.sidebar-info .address {
+    margin: 0;
+}
+
+.sidebar-info .website {
+    margin: 2mm 0 0 0;
+}
+
+.sidebar-info .date {
+    margin: 2mm 0 0 0;
+}
+
+.sidebar-info .extra {
+    margin-top: 1.5mm;
+    font-size: 6.5pt;
+}
+
+/* ── Page Container ─────────────────────────────────────── */
+
+.page {
+    position: relative;
+}
+
+/* ── Content Area ───────────────────────────────────────── */
+
+.content {
+    max-width: 128mm;
+}
+
+.content p {
+    text-align: justify;
+    margin: 0 0 2mm 0;
+    font-size: 9.5pt;
+    line-height: 1.35;
+}
+
+/* ── Document Title ─────────────────────────────────────── */
+
+.doc-title {
+    font-family: 'Telegraf', sans-serif;
+    font-weight: 200;
+    font-size: 22pt;
+    line-height: 1.15;
+    margin: 0 0 1.5mm 0;
+    color: #000;
+}
+
+.doc-subtitle {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-weight: 400;
+    font-size: 8pt;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin: 0 0 5mm 0;
+    color: #000;
+}
+
+/* ── Headings ───────────────────────────────────────────── */
+
+.content h1 {
+    font-family: 'Telegraf', sans-serif;
+    font-weight: 200;
+    font-size: 20pt;
+    line-height: 1.2;
+    margin: 6mm 0 3mm 0;
+    page-break-after: avoid;
+}
+
+.content h2 {
+    font-family: 'Telegraf', sans-serif;
+    font-weight: 700;
+    font-size: 11pt;
+    margin: 4mm 0 2mm 0;
+    page-break-after: avoid;
+}
+
+.content h3 {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-weight: 700;
+    font-size: 9.5pt;
+    margin: 3mm 0 1.5mm 0;
+    page-break-after: avoid;
+}
+
+/* ── Clause Numbering ───────────────────────────────────── */
+
+.clause {
+    margin-top: 4mm;
+    margin-bottom: 2mm;
+    page-break-inside: avoid;
+}
+
+.clause-header {
+    display: flex;
+    gap: 5mm;
+    margin-bottom: 1.5mm;
+}
+
+.clause-number {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-weight: 700;
+    font-size: 10pt;
+    min-width: 12mm;
+    flex-shrink: 0;
+}
+
+.clause-title {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-weight: 700;
+    font-size: 10pt;
+    text-transform: uppercase;
+}
+
+.subclause {
+    display: flex;
+    gap: 3mm;
+    margin-bottom: 1.5mm;
+    margin-left: 12mm;
+}
+
+.subclause-number {
+    font-weight: 400;
+    font-size: 9.5pt;
+    min-width: 9mm;
+    flex-shrink: 0;
+}
+
+.subclause-content {
+    font-size: 9.5pt;
+    text-align: justify;
+    flex: 1;
+}
+
+.sub-subclause {
+    display: flex;
+    gap: 3mm;
+    margin-bottom: 1.5mm;
+    margin-left: 21mm;
+}
+
+.sub-subclause-number {
+    font-weight: 400;
+    font-size: 9.5pt;
+    min-width: 12mm;
+    flex-shrink: 0;
+}
+
+.sub-subclause-content {
+    font-size: 9.5pt;
+    text-align: justify;
+    flex: 1;
+}
+
+/* ── Key-Value Table (Position details) ─────────────────── */
+
+.kv-table {
+    width: auto;
+    border-collapse: collapse;
+    margin: 3mm 0 4mm 9mm;
+}
+
+.kv-table td {
+    padding: 1mm 0;
+    font-size: 9.5pt;
+    vertical-align: top;
+}
+
+.kv-table td:first-child {
+    font-weight: 700;
+    width: 30mm;
+    padding-right: 8mm;
+}
+
+/* ── Fee / Pricing Tables ───────────────────────────────── */
+
+.fee-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 3mm 0;
+    font-size: 8.5pt;
+}
+
+.fee-table thead th {
+    font-weight: 700;
+    text-align: left;
+    padding: 1.5mm 2.5mm;
+    border-top: 1px solid #000;
+    border-bottom: 1px solid #000;
+    font-size: 8pt;
+}
+
+.fee-table thead th:last-child {
+    text-align: left;
+    width: 20%;
+}
+
+.fee-table tbody td {
+    padding: 2.5mm 2.5mm;
+    vertical-align: top;
+    border-bottom: 1px solid #ccc;
+}
+
+.fee-table tbody td:last-child {
+    white-space: nowrap;
+}
+
+.fee-table .item-title {
+    font-weight: 700;
+    display: block;
+    margin-bottom: 0.5mm;
+}
+
+.fee-table .item-description {
+    font-size: 8.5pt;
+    color: #000;
+    display: block;
+    text-align: left;
+}
+
+.fee-table .subtotal-row td {
+    border-top: 1px solid #000;
+    border-bottom: 1px solid #000;
+    font-weight: 700;
+    text-align: right;
+}
+
+.fee-table .subtotal-row td:last-child {
+    text-align: left;
+}
+
+.fee-table .discount-row td {
+    font-style: normal;
+}
+
+.fee-table .total-row td {
+    border-top: 2px solid #000;
+    font-weight: 700;
+}
+
+/* ── Bullet Lists ───────────────────────────────────────── */
+
+.content ul {
+    margin: 1.5mm 0 2mm 0;
+    padding-left: 5mm;
+    list-style-type: disc;
+}
+
+.content ul li {
+    font-size: 9.5pt;
+    margin-bottom: 1mm;
+    text-align: left;
+    padding-left: 1mm;
+}
+
+.content ul ul {
+    list-style-type: disc;
+    margin: 0.5mm 0 0.5mm 0;
+    padding-left: 5mm;
+}
+
+.content ul ul ul {
+    list-style-type: none;
+    padding-left: 0;
+}
+
+.content ul ul ul li::before {
+    content: "\2013\00a0";
+    margin-left: -3mm;
+}
+
+/* ── Salutation / Letter Intro ──────────────────────────── */
+
+.salutation {
+    margin: 0 0 3mm 0;
+    font-size: 9.5pt;
+}
+
+.intro {
+    margin-bottom: 3mm;
+}
+
+/* ── Signature Block ────────────────────────────────────── */
+
+.signature-block {
+    margin-top: 8mm;
+    page-break-inside: avoid;
+}
+
+.signature-space {
+    height: 18mm;
+}
+
+.signatory-name {
+    font-weight: 700;
+    font-size: 9.5pt;
+    margin: 0;
+}
+
+.signatory-title {
+    font-size: 9.5pt;
+    margin: 0;
+}
+
+.signatory-org {
+    margin-top: 1.5mm;
+    font-size: 9.5pt;
+}
+
+.signatory-date {
+    font-size: 9.5pt;
+}
+
+/* ── Acceptance Page ────────────────────────────────────── */
+
+.acceptance-section {
+    page-break-before: always;
+}
+
+.acceptance-section .doc-title {
+    font-size: 20pt;
+    margin-bottom: 6mm;
+}
+
+.acceptance-meta {
+    font-size: 9pt;
+    margin-bottom: 2mm;
+}
+
+.acceptance-intro {
+    font-size: 9.5pt;
+    margin-bottom: 4mm;
+}
+
+.acceptance-options {
+    font-size: 9pt;
+    margin-bottom: 5mm;
+    line-height: 1.6;
+}
+
+.acceptance-options .option-note {
+    font-style: italic;
+    font-size: 8pt;
+    margin-top: 1mm;
+}
+
+/* Form fields — clean table layout */
+.acceptance-form {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 4mm 0 6mm 0;
+}
+
+.acceptance-form td {
+    padding: 3mm 0;
+    font-size: 9.5pt;
+    vertical-align: bottom;
+}
+
+.acceptance-form td:first-child {
+    font-weight: 700;
+    width: 38mm;
+    white-space: nowrap;
+    padding-right: 4mm;
+}
+
+.acceptance-form td:last-child {
+    border-bottom: 0.5pt solid #000;
+}
+
+.acceptance-form .field-note {
+    font-size: 7.5pt;
+    font-style: italic;
+    font-weight: 400;
+    color: #666;
+}
+
+/* Signature rows */
+.acceptance-sig-section {
+    margin-top: 8mm;
+}
+
+.acceptance-sig-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 8mm;
+}
+
+.acceptance-sig-table td {
+    vertical-align: top;
+    padding: 0;
+}
+
+.acceptance-sig-table .sig-label {
+    font-size: 9pt;
+    font-weight: 400;
+    width: 25mm;
+    padding-top: 2mm;
+}
+
+.acceptance-sig-table .sig-details {
+    padding-left: 4mm;
+}
+
+.acceptance-sig-table .sig-details .sig-line {
+    border-bottom: 0.5pt solid #000;
+    height: 6mm;
+    margin-bottom: 2mm;
+    width: 60mm;
+}
+
+.acceptance-sig-table .sig-details .sig-label-small {
+    font-size: 7.5pt;
+    color: #666;
+    margin-bottom: 1mm;
+}
+
+.acceptance-sig-table .sig-box-col {
+    width: 40mm;
+    padding-left: 6mm;
+}
+
+.acceptance-sig-table .sig-box {
+    border: 0.5pt solid #999;
+    width: 35mm;
+    height: 22mm;
+}
+
+.acceptance-footer-note {
+    font-size: 8pt;
+    margin-top: 8mm;
+    line-height: 1.5;
+    color: #333;
+}
+
+.acceptance-footer-note .or-divider {
+    text-align: center;
+    margin: 1mm 0;
+}
+
+/* ── Annex ──────────────────────────────────────────────── */
+
+.annex {
+    page-break-before: always;
+}
+
+.annex-title {
+    font-family: 'Telegraf', sans-serif;
+    font-weight: 200;
+    font-size: 20pt;
+    margin: 0 0 1.5mm 0;
+}
+
+.annex-subtitle {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-weight: 400;
+    font-size: 8pt;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin: 0 0 4mm 0;
+}
+
+/* ── Cover Page (for Quotations) ────────────────────────── */
+
+.cover-page {
+    page-break-after: always;
+}
+
+.cover-page .cover-title {
+    font-family: 'Telegraf', sans-serif;
+    font-weight: 200;
+    font-size: 28pt;
+    line-height: 1.15;
+    margin-top: 50mm;
+    margin-bottom: 3mm;
+}
+
+.cover-page .cover-client {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-weight: 400;
+    font-size: 8pt;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-top: 2mm;
+}
+
+/* ── Section Pages (Quotation phases) ───────────────────── */
+
+.section-title {
+    font-family: 'Telegraf', sans-serif;
+    font-weight: 200;
+    font-size: 20pt;
+    line-height: 1.15;
+    margin: 0 0 2mm 0;
+}
+
+.section-description {
+    font-size: 8.5pt;
+    margin-bottom: 4mm;
+    max-width: 115mm;
+    text-align: left;
+}
+
+/* ── Utilities ──────────────────────────────────────────── */
+
+.bold { font-weight: 700; }
+.underline { text-decoration: underline; }
+.page-break { page-break-before: always; }
+.no-break { page-break-inside: avoid; }
+.mt-4 { margin-top: 3mm; }
+.mt-8 { margin-top: 6mm; }
+.mb-4 { margin-bottom: 3mm; }
+.mb-8 { margin-bottom: 6mm; }
+.text-right { text-align: right; }
+.text-center { text-align: center; }
+.text-small { font-size: 7pt; }
+.text-grey { color: #999; }

@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Evye — Document Generator</title>
+<style>
+  @font-face {
+    font-family: 'Telegraf';
+    src: url('/docs/fonts/Telegraf-Regular.woff2') format('woff2'),
+         url('/docs/fonts/Telegraf-Regular.otf') format('opentype');
+    font-weight: 400;
+  }
+  @font-face {
+    font-family: 'Telegraf';
+    src: url('/docs/fonts/Telegraf-Bold.woff2') format('woff2'),
+         url('/docs/fonts/Telegraf-Bold.otf') format('opentype');
+    font-weight: 700;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    background: #f7f7f7;
+    color: #1a1a1a;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  .container {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 48px 24px;
+  }
+
+  .logo {
+    width: 64px;
+    margin-bottom: 32px;
+    opacity: 0.85;
+  }
+
+  h1 {
+    font-family: 'Telegraf', 'Helvetica Neue', sans-serif;
+    font-weight: 700;
+    font-size: 28px;
+    margin-bottom: 8px;
+    color: #111;
+  }
+
+  .subtitle {
+    font-size: 14px;
+    color: #888;
+    margin-bottom: 40px;
+  }
+
+  label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #666;
+    margin-bottom: 6px;
+  }
+
+  input, select, textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 14px;
+    color: #1a1a1a;
+    background: #fff;
+    transition: border-color 0.15s;
+  }
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: #111;
+  }
+
+  .field { margin-bottom: 20px; }
+
+  .row {
+    display: flex;
+    gap: 12px;
+  }
+  .row .field { flex: 1; }
+  .row .field.narrow { flex: 0 0 120px; }
+
+  textarea {
+    min-height: 200px;
+    resize: vertical;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  .hint {
+    font-size: 12px;
+    color: #999;
+    margin-top: 4px;
+  }
+
+  button[type="submit"] {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 28px;
+    background: #111;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-family: 'Telegraf', 'Helvetica Neue', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s;
+    margin-top: 8px;
+  }
+  button[type="submit"]:hover { background: #333; }
+  button[type="submit"]:disabled {
+    background: #999;
+    cursor: wait;
+  }
+
+  #result {
+    margin-top: 24px;
+    padding: 16px 20px;
+    background: #eef7ee;
+    border: 1px solid #c3e6c3;
+    border-radius: 8px;
+  }
+  #result a {
+    color: #111;
+    font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  #error {
+    margin-top: 24px;
+    padding: 16px 20px;
+    background: #fef0f0;
+    border: 1px solid #e6c3c3;
+    border-radius: 8px;
+    color: #8b2020;
+  }
+
+  .hidden { display: none; }
+
+  hr {
+    border: none;
+    border-top: 1px solid #e5e5e5;
+    margin: 32px 0;
+  }
+
+  .footer {
+    font-size: 12px;
+    color: #bbb;
+    margin-top: 48px;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 30'%3E%3Ctext x='0' y='24' font-family='Helvetica Neue,Helvetica,Arial' font-size='28' font-weight='300' fill='%23111'%3Eevye%3C/text%3E%3C/svg%3E" class="logo" alt="Evye">
+
+  <h1>Document Generator</h1>
+  <p class="subtitle">Generate branded Evye LLP documents from markdown content.</p>
+
+  <form id="docForm">
+    <div class="row">
+      <div class="field">
+        <label for="doc_type">Document Type</label>
+        <select id="doc_type" name="doc_type">
+          <option value="letter" selected>Letter</option>
+          <option value="contract">Contract</option>
+          <option value="quotation">Quotation</option>
+          <option value="custom">Custom</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label for="doc_title">Document Title</label>
+        <input type="text" id="doc_title" name="doc_title" placeholder="e.g. Service Proposal" required>
+      </div>
+      <div class="field">
+        <label for="doc_subtitle">Subtitle / Client</label>
+        <input type="text" id="doc_subtitle" name="doc_subtitle" placeholder="e.g. TRINITY CONSULTING">
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field narrow">
+        <label for="salutation">Salutation</label>
+        <select id="salutation" name="salutation">
+          <option value="">—</option>
+          <option value="Mr">Mr</option>
+          <option value="Ms">Ms</option>
+          <option value="Mrs">Mrs</option>
+          <option value="Dr">Dr</option>
+          <option value="Prof">Prof</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="recipient_name">Recipient Name</label>
+        <input type="text" id="recipient_name" name="recipient_name" placeholder="e.g. Clarence Loh">
+      </div>
+    </div>
+
+    <hr>
+
+    <div class="field">
+      <label for="content">Content (Markdown)</label>
+      <textarea id="content" name="content" placeholder="Paste your document content here in markdown format.
+
+## Section Title
+Body text goes here.
+
+- Bullet point one
+- Bullet point two
+
+| Item | Description | Fee |
+|------|-------------|-----|
+| Service | Details | $1,000 |" required></textarea>
+      <p class="hint">Use ## for headings, - or * for bullets, | for tables. Bold **text** markers are stripped automatically.</p>
+    </div>
+
+    <hr>
+
+    <div class="row">
+      <div class="field">
+        <label for="signatory_name">Signatory Name</label>
+        <input type="text" id="signatory_name" name="signatory_name" value="Michael Ryan Chan">
+      </div>
+      <div class="field">
+        <label for="signatory_title">Signatory Title</label>
+        <input type="text" id="signatory_title" name="signatory_title" value="Managing Partner">
+      </div>
+    </div>
+
+    <button type="submit" id="submitBtn">Generate Document</button>
+  </form>
+
+  <div id="result" class="hidden"></div>
+  <div id="error" class="hidden"></div>
+
+  <p class="footer">Evye LLP &middot; Downloads include the Telegraf font files. Install them once for correct display.</p>
+
+</div>
+
+<script>
+const form     = document.getElementById('docForm');
+const resultEl = document.getElementById('result');
+const errorEl  = document.getElementById('error');
+const submitBtn = document.getElementById('submitBtn');
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  resultEl.classList.add('hidden');
+  errorEl.classList.add('hidden');
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Generating\u2026';
+
+  const metadata = {
+    doc_title:            document.getElementById('doc_title').value.trim(),
+    doc_subtitle:         document.getElementById('doc_subtitle').value.trim().toUpperCase(),
+    doc_type:             document.getElementById('doc_type').value,
+    recipient_salutation: document.getElementById('salutation').value,
+    recipient_name:       document.getElementById('recipient_name').value.trim(),
+    signatory_name:       document.getElementById('signatory_name').value.trim(),
+    signatory_title:      document.getElementById('signatory_title').value.trim(),
+  };
+
+  const body = {
+    markdown: document.getElementById('content').value,
+    metadata: metadata,
+  };
+
+  try {
+    const res = await fetch('/docs/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: res.statusText }));
+      throw new Error(err.detail || 'Generation failed');
+    }
+
+    const data = await res.json();
+    resultEl.innerHTML = 'Document generated. <a href="' + data.download_url + '" download>Download ' + data.filename + '</a>';
+    resultEl.classList.remove('hidden');
+  } catch (err) {
+    errorEl.textContent = err.message;
+    errorEl.classList.remove('hidden');
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Generate Document';
+  }
+});
+</script>
+</body>
+</html>

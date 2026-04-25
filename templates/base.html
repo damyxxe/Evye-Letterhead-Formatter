@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title | default('Evye LLP Document') }}</title>
+    <link rel="stylesheet" href="{{ css_path }}">
+</head>
+<body>
+    {# ── Fixed Sidebar: repeats on every page ── #}
+    <div class="sidebar-fixed">
+        <img src="{{ logo_path }}" alt="Evye" class="logo">
+        <div class="sidebar-info">
+            <p class="company-name">Evye LLP</p>
+            <p class="address">298 Tiong Bahru Road<br>#05-01 Central Plaza<br>Singapore 168730</p>
+            <p class="website">www.evye.co</p>
+            {% if date is defined and date %}
+            <p class="date">{{ date }}</p>
+            {% endif %}
+            {% if sidebar_extra is defined and sidebar_extra %}
+            <p class="extra">{{ sidebar_extra }}</p>
+            {% endif %}
+        </div>
+    </div>
+
+    {# ── Main Content ── #}
+    <div class="content">
+        {% block title_block %}
+        {% if doc_title is defined and doc_title %}
+        <h1 class="doc-title">{{ doc_title }}</h1>
+        {% endif %}
+        {% if doc_subtitle is defined and doc_subtitle %}
+        <p class="doc-subtitle">{{ doc_subtitle }}</p>
+        {% endif %}
+        {% endblock %}
+
+        {% block content %}{% endblock %}
+    </div>
+</body>
+</html>
