@@ -1032,69 +1032,96 @@ def _notion_blocks_to_content(blocks: list) -> tuple:
         # else: false positive — leave content alone
 
     # ── 3. Convert blocks ─────────────────────────────────────────
-    content_blocks = []
-    for blk in blocks:
+    # _emit_block handles a single Notion block + its children recursively.
+    # Children appear on `blk["children"]` when the n8n workflow has
+    # pre-fetched them (Notion API requires a separate GET per parent block
+    # because GET /blocks/{id}/children only returns one level deep).
+    #
+    # Bullets nest by incrementing `level` (capped at 3 to match Word styles).
+    # Other block types (paragraph, heading, toggle, etc.) recurse with the
+    # same level — children render inline beneath their parent.
+    def _emit_block(blk, level=1):
         btype = blk.get("type", "")
+        children = blk.get("children", []) or []
+        out = []
 
         if btype == "paragraph":
             text = _extract_notion_rich_text(blk["paragraph"]["rich_text"])
             if not text:
-                content_blocks.append({"type": "spacer"})
-                continue
-            # Detect "Dear X[,]" for recipient extraction
-            if not meta.get("recipient_name"):
-                dear_m = re.match(
-                    r'^[Dd]ear\s+(?:(Mr|Ms|Mrs|Dr|Prof)\.?\s+)?([\w][\w\s]*?)(?:,\s*)?$',
-                    text
-                )
-                if dear_m:
-                    if dear_m.group(1):
-                        meta["recipient_salutation"] = dear_m.group(1)
-                        meta["recipient_name"] = dear_m.group(2).strip()
-                    else:
-                        meta["recipient_name"] = dear_m.group(2).strip()
-            content_blocks.append({"type": "paragraph", "text": text})
+                out.append({"type": "spacer"})
+            else:
+                # Detect "Dear X[,]" only at the top level (level==1)
+                if level == 1 and not meta.get("recipient_name"):
+                    dear_m = re.match(
+                        r'^[Dd]ear\s+(?:(Mr|Ms|Mrs|Dr|Prof)\.?\s+)?([\w][\w\s]*?)(?:,\s*)?$',
+                        text
+                    )
+                    if dear_m:
+                        if dear_m.group(1):
+                            meta["recipient_salutation"] = dear_m.group(1)
+                            meta["recipient_name"] = dear_m.group(2).strip()
+                        else:
+                            meta["recipient_name"] = dear_m.group(2).strip()
+                out.append({"type": "paragraph", "text": text})
 
         elif btype in ("heading_1", "heading_2"):
             text = _extract_notion_rich_text(blk[btype]["rich_text"])
             if text:
-                content_blocks.append({"type": "heading2", "text": text})
+                out.append({"type": "heading2", "text": text})
 
         elif btype == "heading_3":
             text = _extract_notion_rich_text(blk["heading_3"]["rich_text"])
             if text:
-                content_blocks.append({"type": "heading3", "text": text})
+                out.append({"type": "heading3", "text": text})
 
-        elif btype == "bulleted_list_item":
-            text = _extract_notion_rich_text(blk["bulleted_list_item"]["rich_text"])
+        elif btype in ("bulleted_list_item", "numbered_list_item"):
+            text = _extract_notion_rich_text(blk[btype]["rich_text"])
             if text:
-                content_blocks.append({"type": "bullet", "text": text, "level": 1})
+                out.append({"type": "bullet", "text": text, "level": min(level, 3)})
+            # Bullet children become deeper-level bullets / nested content
+            for child in children:
+                out.extend(_emit_block(child, level + 1))
+            return out  # children handled
 
-        elif btype == "numbered_list_item":
-            text = _extract_notion_rich_text(blk["numbered_list_item"]["rich_text"])
+        elif btype == "toggle":
+            text = _extract_notion_rich_text(blk["toggle"]["rich_text"])
             if text:
-                content_blocks.append({"type": "bullet", "text": text, "level": 1})
+                out.append({"type": "paragraph", "text": text})
+            for child in children:
+                out.extend(_emit_block(child, level))
+            return out
 
         elif btype == "quote":
             text = _extract_notion_rich_text(blk["quote"]["rich_text"])
             if text:
-                content_blocks.append({"type": "paragraph_left", "text": text})
+                out.append({"type": "paragraph_left", "text": text})
 
         elif btype == "callout":
             text = _extract_notion_rich_text(blk["callout"]["rich_text"])
             if text:
-                content_blocks.append({"type": "paragraph_left", "text": text})
+                out.append({"type": "paragraph_left", "text": text})
 
         elif btype == "divider":
-            content_blocks.append({"type": "spacer"})
+            out.append({"type": "spacer"})
 
         elif btype == "table":
             table_block = _convert_notion_table_block(blk)
             if table_block:
-                content_blocks.append(table_block)
+                out.append(table_block)
+            return out  # table_row children handled by _convert_notion_table_block via _rows
 
         # Intentionally skipped: image, file, bookmark, embed, code,
         # video, audio, pdf, child_page, child_database, unsupported.
+
+        # Default: still recurse into children for any other block type
+        # (e.g. column_list, column, synced_block all hold content in children).
+        for child in children:
+            out.extend(_emit_block(child, level))
+        return out
+
+    content_blocks = []
+    for blk in blocks:
+        content_blocks.extend(_emit_block(blk))
 
     # ── Infer bullets from prose paragraphs ───────────────────────────
     # Writers often prefix paragraphs with "✦ ", "• ", "- " etc. instead
