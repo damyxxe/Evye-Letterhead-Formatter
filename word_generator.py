@@ -1254,12 +1254,15 @@ def _notion_blocks_to_content(blocks: list) -> tuple:
         children = blk.get("children", []) or []
         out = []
 
+        def _payload():
+            return blk.get(btype, {}) or {}
+
         if btype == "paragraph":
-            text = _extract_notion_rich_text(blk["paragraph"]["rich_text"])
+            runs = _extract_notion_runs(_payload().get("rich_text", []))
+            text = _runs_plain(runs)
             if not text:
                 out.append({"type": "spacer"})
             else:
-                # Detect "Dear X[,]" only at the top level (level==1)
                 if level == 1 and not meta.get("recipient_name"):
                     dear_m = re.match(
                         r'^[Dd]ear\s+(?:(Mr|Ms|Mrs|Dr|Prof)\.?\s+)?([\w][\w\s]*?)(?:,\s*)?$',
@@ -1271,44 +1274,67 @@ def _notion_blocks_to_content(blocks: list) -> tuple:
                             meta["recipient_name"] = dear_m.group(2).strip()
                         else:
                             meta["recipient_name"] = dear_m.group(2).strip()
-                out.append({"type": "paragraph", "text": text})
+                out.append({"type": "paragraph", "text": text, "runs": runs})
 
-        elif btype in ("heading_1", "heading_2"):
-            text = _extract_notion_rich_text(blk[btype]["rich_text"])
+        elif btype == "heading_1":
+            text = _extract_notion_rich_text(_payload().get("rich_text", []))
             if text:
                 out.append({"type": "heading2", "text": text})
 
-        elif btype == "heading_3":
-            text = _extract_notion_rich_text(blk["heading_3"]["rich_text"])
+        elif btype == "heading_2":
+            text = _extract_notion_rich_text(_payload().get("rich_text", []))
             if text:
                 out.append({"type": "heading3", "text": text})
 
-        elif btype in ("bulleted_list_item", "numbered_list_item"):
-            text = _extract_notion_rich_text(blk[btype]["rich_text"])
+        elif btype == "heading_3":
+            text = _extract_notion_rich_text(_payload().get("rich_text", []))
             if text:
-                out.append({"type": "bullet", "text": text, "level": min(level, 3)})
-            # Bullet children become deeper-level bullets / nested content
+                out.append({"type": "heading4", "text": text})
+
+        elif btype == "bulleted_list_item":
+            runs = _extract_notion_runs(_payload().get("rich_text", []))
+            text = _runs_plain(runs)
+            if text:
+                out.append({"type": "bullet", "text": text, "runs": runs,
+                            "level": min(level, 3)})
             for child in children:
                 out.extend(_emit_block(child, level + 1))
-            return out  # children handled
+            return out
+
+        elif btype == "numbered_list_item":
+            runs = _extract_notion_runs(_payload().get("rich_text", []))
+            text = _runs_plain(runs)
+            if text:
+                out.append({"type": "numbered", "text": text, "runs": runs,
+                            "level": min(level, 3)})
+            for child in children:
+                out.extend(_emit_block(child, level + 1))
+            return out
+
+        elif btype == "to_do":
+            runs = _extract_notion_runs(_payload().get("rich_text", []))
+            text = _runs_plain(runs)
+            if text:
+                out.append({"type": "todo", "checked": bool(_payload().get("checked")),
+                            "text": text, "runs": runs, "level": min(level, 3)})
+            for child in children:
+                out.extend(_emit_block(child, level + 1))
+            return out
 
         elif btype == "toggle":
-            text = _extract_notion_rich_text(blk["toggle"]["rich_text"])
+            runs = _extract_notion_runs(_payload().get("rich_text", []))
+            text = _runs_plain(runs)
             if text:
-                out.append({"type": "paragraph", "text": text})
+                out.append({"type": "paragraph", "text": text, "runs": runs})
             for child in children:
                 out.extend(_emit_block(child, level))
             return out
 
-        elif btype == "quote":
-            text = _extract_notion_rich_text(blk["quote"]["rich_text"])
+        elif btype in ("quote", "callout"):
+            runs = _extract_notion_runs(_payload().get("rich_text", []))
+            text = _runs_plain(runs)
             if text:
-                out.append({"type": "paragraph_left", "text": text})
-
-        elif btype == "callout":
-            text = _extract_notion_rich_text(blk["callout"]["rich_text"])
-            if text:
-                out.append({"type": "paragraph_left", "text": text})
+                out.append({"type": "paragraph_left", "text": text, "runs": runs})
 
         elif btype == "divider":
             out.append({"type": "spacer"})
@@ -1317,13 +1343,70 @@ def _notion_blocks_to_content(blocks: list) -> tuple:
             table_block = _convert_notion_table_block(blk)
             if table_block:
                 out.append(table_block)
-            return out  # table_row children handled by _convert_notion_table_block via _rows
+            return out
 
-        # Intentionally skipped: image, file, bookmark, embed, code,
-        # video, audio, pdf, child_page, child_database, unsupported.
+        elif btype == "code":
+            code_text = _extract_notion_rich_text(_payload().get("rich_text", []))
+            if code_text:
+                out.append({"type": "code_block", "text": code_text})
+            cap = _extract_notion_rich_text(_payload().get("caption", []))
+            if cap:
+                out.append({"type": "paragraph_left", "text": cap})
 
-        # Default: still recurse into children for any other block type
-        # (e.g. column_list, column, synced_block all hold content in children).
+        elif btype == "image":
+            img = _payload()
+            url = ((img.get("file") or {}).get("url")
+                   or (img.get("external") or {}).get("url"))
+            caption = _extract_notion_rich_text(img.get("caption", []))
+            if url:
+                out.append({"type": "image", "url": url, "caption": caption})
+            elif caption:
+                out.append({"type": "paragraph_left", "text": caption})
+
+        elif btype in ("bookmark", "embed", "link_preview"):
+            data = _payload()
+            url = data.get("url", "")
+            cap = _extract_notion_rich_text(data.get("caption", []))
+            label = cap or url
+            if label:
+                out.append({"type": "paragraph", "text": label,
+                            "runs": [{"t": label, "link": url or None}]})
+
+        elif btype in ("file", "pdf", "video", "audio"):
+            data = _payload()
+            name = data.get("name") or ""
+            cap = _extract_notion_rich_text(data.get("caption", []))
+            url = ((data.get("file") or {}).get("url")
+                   or (data.get("external") or {}).get("url") or "")
+            label = name or cap or url or btype
+            out.append({"type": "paragraph_left", "text": f"[Attachment: {label}]"})
+
+        elif btype == "equation":
+            expr = _payload().get("expression", "")
+            if expr:
+                out.append({"type": "code_block", "text": expr})
+
+        elif btype in ("child_page", "child_database"):
+            title = _payload().get("title", "")
+            if title:
+                out.append({"type": "paragraph_left", "text": f"[Sub-page: {title}]"})
+
+        elif btype in ("table_of_contents", "breadcrumb", "template"):
+            pass  # purely navigational — nothing to render
+
+        elif btype in ("column_list", "column", "synced_block"):
+            pass  # containers — content is in children, recursed below
+
+        else:
+            # ── No-silent-loss fallback ──
+            text = _get_notion_block_text(blk)
+            if text:
+                out.append({"type": "paragraph", "text": text})
+            elif not children:
+                out.append({"type": "paragraph_left",
+                            "text": f"[Unsupported block: {btype}]"})
+
+        # Default: recurse into children for any type that didn't return above
         for child in children:
             out.extend(_emit_block(child, level))
         return out
@@ -1357,8 +1440,25 @@ def _notion_blocks_to_content(blocks: list) -> tuple:
                 run_len = run_end - i
                 if run_len >= 2:
                     for j in range(i, run_end):
-                        stripped = BULLET_PREFIX.match(content_blocks[j]["text"]).group(2).strip()
-                        content_blocks[j] = {"type": "bullet", "text": stripped, "level": 1}
+                        blk_j = content_blocks[j]
+                        m2 = BULLET_PREFIX.match(blk_j["text"])
+                        stripped_text = m2.group(2).strip()
+                        new_blk = {"type": "bullet", "text": stripped_text, "level": 1}
+                        runs = blk_j.get("runs")
+                        if runs:
+                            remaining = m2.start(2)   # chars to strip from run stream
+                            new_runs = []
+                            for r in runs:
+                                t = r.get("t", "")
+                                if remaining > 0:
+                                    if len(t) <= remaining:
+                                        remaining -= len(t)
+                                        continue
+                                    t = t[remaining:]
+                                    remaining = 0
+                                new_runs.append({**r, "t": t})
+                            new_blk["runs"] = new_runs
+                        content_blocks[j] = new_blk
                     i = run_end
                     continue
         i += 1
@@ -1407,12 +1507,11 @@ def _convert_notion_table_block(block: dict) -> dict:
         ]
         return {"type": "kv_table", "rows": rows_out}
 
-    if n_cols >= 3:
+    if n_cols == 3:
         FEE_WORDS = {'fee', 'investment', 'cost', 'price', 'amount', 'rate',
                      'total', 'charge', 'quoted', 'sgd', 's$', '$'}
         last_header = (headers[-1] if headers else "").lower()
         is_fee = any(w in last_header for w in FEE_WORDS)
-        # Also check if last column contains currency-like values
         if not is_fee and data_rows:
             last_vals = [r[-1] if r else "" for r in data_rows[:3]]
             is_fee = any(re.search(r'[\$\d,]{3,}', v) for v in last_vals)
@@ -1435,7 +1534,6 @@ def _convert_notion_table_block(block: dict) -> dict:
                 "total": total,
             }
 
-        # Generic process/step table
         rows_out = [
             {"col1": r[0] if len(r) > 0 else "",
              "col2": r[1] if len(r) > 1 else "",
@@ -1444,7 +1542,8 @@ def _convert_notion_table_block(block: dict) -> dict:
         ]
         return {"type": "process_table", "headers": headers, "rows": rows_out}
 
-    return None
+    # 1 column or 4+ columns → generic table. NOTHING is dropped or truncated.
+    return {"type": "generic_table", "headers": headers, "rows": data_rows}
 
 
 def _preprocess_notion_markdown(text: str) -> str:
