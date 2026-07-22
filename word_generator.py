@@ -175,8 +175,7 @@ def _build_contract(doc, data):
         _add_para(doc, annex.get("title", "Annex"), "Annex Title")
         if annex.get("subtitle"):
             _add_para(doc, annex["subtitle"], "Heading 3")
-        for block in annex.get("body", []):
-            _render_block(doc, block)
+        _render_blocks(doc, annex.get("body", []))
 
 
 def _build_quotation(doc, data):
@@ -228,6 +227,7 @@ def _build_custom(doc, data):
 # ── Rendering helpers ─────────────────────────────────────────────────────────
 
 def _render_blocks(doc, blocks):
+    _assign_numbers(blocks)
     for block in blocks:
         _render_block(doc, block)
 
@@ -272,6 +272,23 @@ def _render_block(doc, block):
         _add_spacer(doc)
     elif t == "page_break":
         _add_page_break(doc)
+    elif t == "numbered":
+        level = block.get("level", 1)
+        style = {1: "Bullet", 2: "Bullet 2", 3: "Bullet 3"}.get(level, "Bullet")
+        content = block.get("runs") or block.get("text", "")
+        _add_para(doc, content, style, prefix=(block.get("number", "1.") + "\t"))
+    elif t == "todo":
+        level = block.get("level", 1)
+        style = {1: "Bullet", 2: "Bullet 2", 3: "Bullet 3"}.get(level, "Bullet")
+        glyph = "☑" if block.get("checked") else "☐"
+        content = block.get("runs") or block.get("text", "")
+        _add_para(doc, content, style, prefix=glyph + "\t")
+    elif t == "code_block":
+        _add_code_block(doc, block.get("text", ""))
+    elif t == "image":
+        _add_image(doc, block.get("url", ""), caption=block.get("caption"))
+    elif t == "generic_table":
+        _add_generic_table(doc, block.get("headers"), block.get("rows", []))
 
 
 def _add_title_block(doc, data):
@@ -317,6 +334,113 @@ def _add_signature(doc, data):
     title = re.sub(r',?\s*Evye\s*(LLP|Pte\.?\s*Ltd|Ltd)?\.?\s*$', '', title, flags=re.I).strip()
     _add_para(doc, title or "Managing Partner", "Signatory Title")
     _add_para(doc, "Evye LLP", "Signatory Title")
+
+
+def _assign_numbers(blocks):
+    """
+    Assign display numbers to `numbered` blocks in-place. Contiguous runs at
+    the same level count up; deeper levels restart; any non-list block resets
+    all counters; a bullet/todo at level L resets counters at levels >= L
+    (so nested bullets under a numbered item don't break the parent count).
+    """
+    counters = {}
+    for b in blocks:
+        t = b.get("type")
+        if t == "numbered":
+            lvl = b.get("level", 1)
+            counters[lvl] = counters.get(lvl, 0) + 1
+            for k in [k for k in counters if k > lvl]:
+                counters.pop(k)
+            b["number"] = f"{counters[lvl]}."
+        elif t in ("bullet", "todo"):
+            lvl = b.get("level", 1)
+            for k in [k for k in counters if k >= lvl]:
+                counters.pop(k)
+        else:
+            counters = {}
+    return blocks
+
+
+def _add_code_block(doc, text):
+    """Monospace block: Body Left style, Courier New 8pt, real line breaks."""
+    p = doc.add_paragraph(style="Body Left")
+    lines = text.split("\n")
+    for idx, line in enumerate(lines):
+        run = p.add_run(line)
+        run.font.name = "Courier New"
+        run.font.size = Pt(8)
+        if idx < len(lines) - 1:
+            run.add_break()
+    return p
+
+
+def _add_image(doc, url, caption=None):
+    """
+    Download and embed an image, capped at 133mm width (the text column).
+    Any failure degrades to a visible placeholder — never silent.
+    """
+    import urllib.request, tempfile, os
+    from docx.shared import Emu
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "evye-docgen"})
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            data = resp.read()
+        tmp = tempfile.NamedTemporaryFile(suffix=".img", delete=False)
+        try:
+            tmp.write(data)
+            tmp.close()
+            pic = doc.add_picture(tmp.name)
+            max_w = Mm(133)
+            if pic.width > max_w:
+                pic.height = Emu(int(pic.height * (max_w / pic.width)))
+                pic.width = max_w
+        finally:
+            os.unlink(tmp.name)
+    except Exception:
+        _add_para(doc, f"[Image unavailable: {url[:120]}]", "Small")
+        return
+    if caption:
+        _add_para(doc, caption, "Small")
+
+
+def _add_generic_table(doc, headers, rows):
+    """
+    N-column fallback for tables that don't fit kv/fee/process shapes
+    (1 column, or 4+ columns). Equal widths totalling ~135mm, standard
+    hairline styling. Preserves EVERY cell — no truncation.
+    """
+    n_cols = 0
+    if rows:
+        n_cols = max(len(r) for r in rows)
+    if headers:
+        n_cols = max(n_cols, len(headers))
+    if n_cols == 0:
+        return
+    n_rows = (1 if headers else 0) + len(rows)
+    table = doc.add_table(rows=n_rows, cols=n_cols)
+    table.style = "Table Grid"
+    _set_table_no_borders(table)
+    col_mm = round(135.0 / n_cols, 1)
+    _set_table_fixed_layout(table, [col_mm] * n_cols)
+    for i in range(n_cols):
+        for cell in table.columns[i].cells:
+            cell.width = Mm(col_mm)
+    HAIRLINE = ("single", "2", "DDDDDD")
+    offset = 0
+    if headers:
+        hdr = table.rows[0]
+        padded = list(headers) + [""] * (n_cols - len(headers))
+        for ci, h in enumerate(padded):
+            _set_cell_style(hdr.cells[ci], "Table Header", h, WD_ALIGN_PARAGRAPH.LEFT,
+                            fill="FFFFFF",
+                            top=("single", "4", "000000"),
+                            bottom=("single", "4", "000000"))
+        offset = 1
+    for ri, row in enumerate(rows):
+        padded = list(row) + [""] * (n_cols - len(row))
+        for ci, val in enumerate(padded):
+            _set_cell_style(table.rows[ri + offset].cells[ci], "Table Body", val,
+                            WD_ALIGN_PARAGRAPH.LEFT, fill="FFFFFF", bottom=HAIRLINE)
 
 
 # ── Table builders ────────────────────────────────────────────────────────────
@@ -1439,7 +1563,7 @@ def _clean_spacers(blocks: list) -> list:
       - between bullet → paragraph
     """
     SECTION_TYPES = {"heading2", "heading3", "heading4"}
-    TABLE_TYPES   = {"fee_table", "kv_table"}
+    TABLE_TYPES   = {"fee_table", "kv_table", "process_table", "generic_table"}
     ASIDE_TYPES   = {"paragraph_left"}
 
     def keep_spacer(prev_type, next_type):
