@@ -1,0 +1,45 @@
+{
+  "page_properties": {
+    "properties": {
+      "title": {"type": "title", "title": [{"plain_text": "Fixture Doc — EVERY BLOCK"}]}
+    }
+  },
+  "blocks": [
+    {"type": "paragraph", "paragraph": {"rich_text": [
+      {"plain_text": "Intro with ", "annotations": {"bold": false, "italic": false, "underline": false, "strikethrough": false, "code": false}, "href": null},
+      {"plain_text": "bold", "annotations": {"bold": true, "italic": false, "underline": false, "strikethrough": false, "code": false}, "href": null},
+      {"plain_text": " and a ", "annotations": {"bold": false, "italic": false, "underline": false, "strikethrough": false, "code": false}, "href": null},
+      {"plain_text": "link", "annotations": {"bold": false, "italic": false, "underline": false, "strikethrough": false, "code": false}, "href": "https://evye.co"}
+    ]}, "has_children": false},
+    {"type": "heading_1", "heading_1": {"rich_text": [{"plain_text": "H1 Section"}]}, "has_children": false},
+    {"type": "heading_2", "heading_2": {"rich_text": [{"plain_text": "H2 Sub"}]}, "has_children": false},
+    {"type": "heading_3", "heading_3": {"rich_text": [{"plain_text": "H3 Subsub"}]}, "has_children": false},
+    {"type": "bulleted_list_item", "bulleted_list_item": {"rich_text": [{"plain_text": "bullet one"}]}, "has_children": true,
+     "children": [{"type": "bulleted_list_item", "bulleted_list_item": {"rich_text": [{"plain_text": "nested bullet"}]}, "has_children": false}]},
+    {"type": "numbered_list_item", "numbered_list_item": {"rich_text": [{"plain_text": "step one"}]}, "has_children": false},
+    {"type": "numbered_list_item", "numbered_list_item": {"rich_text": [{"plain_text": "step two"}]}, "has_children": false},
+    {"type": "to_do", "to_do": {"rich_text": [{"plain_text": "open task"}], "checked": false}, "has_children": false},
+    {"type": "to_do", "to_do": {"rich_text": [{"plain_text": "done task"}], "checked": true}, "has_children": false},
+    {"type": "toggle", "toggle": {"rich_text": [{"plain_text": "Toggle header"}]}, "has_children": true,
+     "children": [{"type": "paragraph", "paragraph": {"rich_text": [{"plain_text": "hidden detail"}]}, "has_children": false}]},
+    {"type": "quote", "quote": {"rich_text": [{"plain_text": "a wise quote"}]}, "has_children": false},
+    {"type": "callout", "callout": {"rich_text": [{"plain_text": "important note"}]}, "has_children": false},
+    {"type": "divider", "divider": {}, "has_children": false},
+    {"type": "code", "code": {"rich_text": [{"plain_text": "print('hi')"}], "language": "python", "caption": []}, "has_children": false},
+    {"type": "equation", "equation": {"expression": "E = mc^2"}, "has_children": false},
+    {"type": "bookmark", "bookmark": {"url": "https://anthropic.com", "caption": []}, "has_children": false},
+    {"type": "child_page", "child_page": {"title": "Appendix Page"}, "has_children": false},
+    {"type": "table", "table": {"has_column_header": true}, "has_children": true, "_rows": [
+      {"type": "table_row", "table_row": {"cells": [[{"plain_text": "Item"}], [{"plain_text": "Description"}], [{"plain_text": "Fee"}]]}},
+      {"type": "table_row", "table_row": {"cells": [[{"plain_text": "Design"}], [{"plain_text": "Logo suite"}], [{"plain_text": "$4,500"}]]}},
+      {"type": "table_row", "table_row": {"cells": [[{"plain_text": "Total"}], [{"plain_text": ""}], [{"plain_text": "$4,500"}]]}}
+    ]},
+    {"type": "table", "table": {"has_column_header": true}, "has_children": true, "_rows": [
+      {"type": "table_row", "table_row": {"cells": [[{"plain_text": "W"}], [{"plain_text": "X"}], [{"plain_text": "Y"}], [{"plain_text": "Z"}]]}},
+      {"type": "table_row", "table_row": {"cells": [[{"plain_text": "1"}], [{"plain_text": "2"}], [{"plain_text": "3"}], [{"plain_text": "4"}]]}}
+    ]},
+    {"type": "mystery_block_type", "mystery_block_type": {}, "has_children": false},
+    {"type": "paragraph", "paragraph": {"rich_text": [{"plain_text": "Warm regards"}]}, "has_children": false},
+    {"type": "paragraph", "paragraph": {"rich_text": [{"plain_text": "Test Signer"}]}, "has_children": false}
+  ]
+}
