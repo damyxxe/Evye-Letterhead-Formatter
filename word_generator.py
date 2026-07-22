@@ -236,9 +236,9 @@ def _render_block(doc, block):
     t = block.get("type", "paragraph")
 
     if t == "paragraph":
-        _add_para(doc, block["text"], "Body")
+        _add_para(doc, block.get("runs") or block["text"], "Body")
     elif t == "paragraph_left":
-        _add_para(doc, block["text"], "Body Left")
+        _add_para(doc, block.get("runs") or block["text"], "Body Left")
     elif t == "heading2":
         _add_para(doc, block["text"], "Heading 2")
     elif t == "heading3":
@@ -249,10 +249,11 @@ def _render_block(doc, block):
         level = block.get("level", 1)
         style = {1: "Bullet", 2: "Bullet 2", 3: "Bullet 3"}.get(level, "Bullet")
         # Evye Bullet uses a literal bullet + tab (not Word list numbering)
-        text = block["text"]
-        if not text.startswith("•"):
-            text = "•\t" + text
-        _add_para(doc, text, style)
+        content = block.get("runs") or block["text"]
+        if isinstance(content, str) and content.startswith("•"):
+            _add_para(doc, content, style)          # legacy pre-glyphed text
+        else:
+            _add_para(doc, content, style, prefix="•\t")
     elif t == "clause":
         _add_clause(doc, block)
     elif t == "subclause":
@@ -447,9 +448,68 @@ def _add_process_table(doc, rows, headers=None):
 
 # ── Low-level OOXML helpers ───────────────────────────────────────────────────
 
-def _add_para(doc, text, style_name):
+def _runs_plain(runs):
+    """Plain-text concatenation of a run list."""
+    return "".join(r.get("t", "") for r in (runs or [])).strip()
+
+
+def _apply_run_format(run, fmt):
+    if fmt.get("b"):
+        run.bold = True
+    if fmt.get("i"):
+        run.italic = True
+    if fmt.get("u"):
+        run.underline = True
+    if fmt.get("s"):
+        run.font.strike = True
+    if fmt.get("c"):
+        run.font.name = "Courier New"
+
+
+def _add_hyperlink_run(paragraph, text, url, fmt=None):
+    """Append a clickable hyperlink run (underlined, Word-blue)."""
+    part = paragraph.part
+    r_id = part.relate_to(
+        url,
+        "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink",
+        is_external=True,
+    )
+    fmt = fmt or {}
+    props = ['<w:color w:val="1F4E79"/>', '<w:u w:val="single"/>']
+    if fmt.get("b"):
+        props.append('<w:b/>')
+    if fmt.get("i"):
+        props.append('<w:i/>')
+    hyperlink_xml = (
+        f'<w:hyperlink {nsdecls("w", "r")} r:id="{r_id}">'
+        f'<w:r><w:rPr>{"".join(props)}</w:rPr>'
+        f'<w:t xml:space="preserve">{_xml_escape(text)}</w:t></w:r>'
+        f'</w:hyperlink>'
+    )
+    paragraph._p.append(parse_xml(hyperlink_xml))
+
+
+def _add_para(doc, content, style_name, prefix=None):
+    """
+    Add a paragraph. `content` is a plain string OR a list of run dicts
+    {"t","b","i","u","s","c","link"}. `prefix` ("•\t", "1.\t", "☐\t") is
+    prepended as an unformatted run so list glyphs stay unstyled.
+    """
     p = doc.add_paragraph(style=style_name)
-    p.add_run(text)
+    if prefix:
+        p.add_run(prefix)
+    if isinstance(content, str):
+        p.add_run(content)
+        return p
+    for r in content:
+        text = r.get("t", "")
+        if not text:
+            continue
+        if r.get("link"):
+            _add_hyperlink_run(p, text, r["link"], r)
+        else:
+            run = p.add_run(text)
+            _apply_run_format(run, r)
     return p
 
 
