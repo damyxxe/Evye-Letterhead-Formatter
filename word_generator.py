@@ -1014,6 +1014,29 @@ def _extract_notion_rich_text(rich_text: list) -> str:
     return "".join(parts).strip()
 
 
+def _extract_notion_runs(rich_text: list) -> list:
+    """
+    Convert a Notion rich_text array into renderer run dicts, preserving
+    bold/italic/underline/strikethrough/code annotations and links.
+    """
+    runs = []
+    for rt in (rich_text or []):
+        text = rt.get("plain_text") or rt.get("text", {}).get("content", "")
+        if not text:
+            continue
+        ann = rt.get("annotations") or {}
+        runs.append({
+            "t": text,
+            "b": bool(ann.get("bold")),
+            "i": bool(ann.get("italic")),
+            "u": bool(ann.get("underline")),
+            "s": bool(ann.get("strikethrough")),
+            "c": bool(ann.get("code")),
+            "link": rt.get("href") or None,
+        })
+    return runs
+
+
 def _get_notion_block_text(block: dict) -> str:
     """Return plain text for any Notion block (used for preamble/sign-off detection)."""
     btype = block.get("type", "")
