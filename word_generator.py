@@ -63,6 +63,8 @@ MASTER_PATH  = PROJECT_ROOT / "templates" / "evye-master.docx"
 OUTPUT_DIR   = PROJECT_ROOT / "output"
 OUTPUT_DIR.mkdir(exist_ok=True)
 
+__version__ = "1.2.0-dev"   # bumped to 1.2.0 at release (Task 12)
+
 
 # ── Public API ────────────────────────────────────────────────────────────────
 

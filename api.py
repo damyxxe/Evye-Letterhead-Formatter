@@ -112,7 +112,7 @@ def generate(req: GenerateRequest):
             "Evye LLP — Font Installation\n"
             "=============================\n\n"
             "For the document to display correctly, install these fonts:\n\n"
-            "  1. Double-click each .otf file in this folder\n"
+            "  1. Double-click each .ttf file in this folder\n"
             "  2. Click 'Install Font' when prompted\n"
             "  3. Open the .docx file — it will now render with the correct fonts\n\n"
             "You only need to install the fonts once per computer.\n"
@@ -174,7 +174,7 @@ def generate_from_blocks(req: GenerateFromBlocksRequest):
             "Evye LLP — Font Installation\n"
             "=============================\n\n"
             "For the document to display correctly, install these fonts:\n\n"
-            "  1. Double-click each .otf file in this folder\n"
+            "  1. Double-click each .ttf file in this folder\n"
             "  2. Click 'Install Font' when prompted\n"
             "  3. Open the .docx file — it will now render with the correct fonts\n\n"
             "You only need to install the fonts once per computer.\n"
@@ -188,7 +188,8 @@ def generate_from_blocks(req: GenerateFromBlocksRequest):
 
 @app.get("/docs/api/health")
 def health():
-    return {"status": "ok"}
+    from word_generator import __version__
+    return {"status": "ok", "version": __version__}
 
 
 @app.get("/docs/dl/{filename}")
