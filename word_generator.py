@@ -1748,6 +1748,18 @@ def _parse_markdown(text: str) -> list:
             i += 1
             continue
 
+        # ── Fenced code block ─────────────────────────────────
+        if line.startswith("```"):
+            code_lines = []
+            i += 1
+            while i < len(lines) and not lines[i].strip().startswith("```"):
+                code_lines.append(lines[i])
+                i += 1
+            i += 1  # skip closing fence
+            if code_lines:
+                add_block({"type": "code_block", "text": "\n".join(code_lines)})
+            continue
+
         # ── Heading ───────────────────────────────────────────
         m = re.match(r'^(#{1,4})\s+(.*)', line)
         if m:
@@ -1778,17 +1790,40 @@ def _parse_markdown(text: str) -> list:
                 quote_lines.append(lines[i].strip().lstrip('>').strip())
                 i += 1
             text = _strip_inline(' '.join(quote_lines))
-            add_block({"type": "paragraph_left", "text": text})
+            add_block({"type": "paragraph_left", "text": text,
+                       "runs": _parse_inline(' '.join(quote_lines))})
+            continue
+
+        # ── Todo item: "- [ ] text" / "- [x] text" ────────────
+        m = re.match(r'^(\s*)[-*+] \[( |x|X)\] (.+)', raw)
+        if m:
+            indent = len(m.group(1))
+            level = 1 if indent < 2 else (2 if indent < 4 else 3)
+            add_block({"type": "todo", "checked": m.group(2).lower() == "x",
+                       "text": _strip_inline(m.group(3)),
+                       "runs": _parse_inline(m.group(3)), "level": level})
+            i += 1
+            continue
+
+        # ── Numbered list item: "1. text" / "2) text" ─────────
+        m = re.match(r'^(\s*)\d+[.)] (.+)', raw)
+        if m:
+            indent = len(m.group(1))
+            level = 1 if indent < 2 else (2 if indent < 4 else 3)
+            add_block({"type": "numbered", "text": _strip_inline(m.group(2)),
+                       "runs": _parse_inline(m.group(2)), "level": level})
+            i += 1
             continue
 
         # ── Bullet point ──────────────────────────────────────
         # Matches: "  - text", "  * text", "  + text", "✦ text", "• text"
-        m = re.match(r'^(\s*)([-*+]|✦|•|\d+[.)]) (.+)', raw)
+        m = re.match(r'^(\s*)([-*+]|✦|•) (.+)', raw)
         if m:
             indent = len(m.group(1))
             text = _strip_inline(m.group(3))
             level = 1 if indent < 2 else (2 if indent < 4 else 3)
-            add_block({"type": "bullet", "text": text, "level": level})
+            add_block({"type": "bullet", "text": text,
+                       "runs": _parse_inline(m.group(3)), "level": level})
             i += 1
             continue
 
@@ -1809,13 +1844,17 @@ def _parse_markdown(text: str) -> list:
                 break
             if l.startswith('>'):
                 break
+            if l.startswith('```'):
+                break
             para_lines.append(l)
             i += 1
 
         if para_lines:
-            text = _strip_inline(' '.join(para_lines))
+            joined = ' '.join(para_lines)
+            text = _strip_inline(joined)
             if text:
-                add_block({"type": "paragraph", "text": text})
+                add_block({"type": "paragraph", "text": text,
+                           "runs": _parse_inline(joined)})
         continue
 
     # Trim leading/trailing spacers
@@ -1882,6 +1921,46 @@ def _parse_table(lines: list) -> dict:
             return {"type": "process_table", "headers": headers, "rows": rows}
 
     return None
+
+
+_INLINE_RE = None
+
+def _parse_inline(text: str) -> list:
+    """Tokenize markdown inline formatting into renderer run dicts."""
+    import re
+    global _INLINE_RE
+    if _INLINE_RE is None:
+        _INLINE_RE = re.compile(
+            r'\*\*\*(?P<bi>.+?)\*\*\*'
+            r'|\*\*(?P<b>.+?)\*\*'
+            r'|__(?P<b2>.+?)__'
+            r'|\*(?P<i>[^*\n]+?)\*'
+            r'|(?<![\w])_(?P<i2>[^_\n]+?)_(?![\w])'
+            r'|`(?P<c>[^`\n]+?)`'
+            r'|\[(?P<lt>[^\]]+)\]\((?P<lu>[^)\s]+)\)'
+        )
+    runs, pos = [], 0
+    for m in _INLINE_RE.finditer(text):
+        if m.start() > pos:
+            runs.append({"t": text[pos:m.start()]})
+        if m.group("bi") is not None:
+            runs.append({"t": m.group("bi"), "b": True, "i": True})
+        elif m.group("b") is not None:
+            runs.append({"t": m.group("b"), "b": True})
+        elif m.group("b2") is not None:
+            runs.append({"t": m.group("b2"), "b": True})
+        elif m.group("i") is not None:
+            runs.append({"t": m.group("i"), "i": True})
+        elif m.group("i2") is not None:
+            runs.append({"t": m.group("i2"), "i": True})
+        elif m.group("c") is not None:
+            runs.append({"t": m.group("c"), "c": True})
+        elif m.group("lt") is not None:
+            runs.append({"t": m.group("lt"), "link": m.group("lu")})
+        pos = m.end()
+    if pos < len(text):
+        runs.append({"t": text[pos:]})
+    return runs
 
 
 def _strip_inline(text: str) -> str:
